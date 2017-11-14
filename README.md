@@ -47,3 +47,98 @@ Data that is send through NLog to AppInsight would have Severity level defining 
 Based on the requirement of the project these events are used.
 Fields supported by telemetry events are provided in the link below:
 https://docs.microsoft.com/en-us/azure/application-insights/app-insights-export-data-model
+
+#  Nlog with Asp.Net Core
+
+Steps to Implement NLog with Asp.net Core:
+
+•	Create a new ASP.NET Core project in Visual Studio 2017.
+•	Add dependency in csproj manually or using NuGet
+Install the latest NLog.Web.AspNetCore.
+•	Create a nlog.config file.
+
+<?xml version="1.0" encoding="utf-8" ?>
+<nlog xmlns="http://www.nlog-project.org/schemas/NLog.xsd"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      autoReload="true"
+      internalLogLevel="Warn"
+      internalLogFile="c:\temp\internal-nlog.txt">
+
+  <!-- Load the ASP.NET Core plugin -->
+  <extensions>
+    <add assembly="NLog.Extensions.AzureTableStorage"/>
+    <add assembly="NLog.Web.AspNetCore"/>
+    <add assembly="Microsoft.ApplicationInsights.NLogTarget" />
+  </extensions>
+
+  <!-- the targets to write to -->
+  <targets>
+    <target name="AzureTableStorage" xsi:type="AzureTableStorage" PartitionKeyPrefixDateFormat="yyyy-MM-dd" LogTimestampFormatString="yyyy-MM-dd hh:mm:ss.000" connectionStringKey="StorageAccountConnectionString" tableName="NLogTableTest" />
+    <target name='AI' xsi:type='ApplicationInsightsTarget'  InstrumentationKey="7210f7c7-9afd-42db-95d2-62eb006b9ad4" />
+  </targets>
+
+  <!-- rules to map from logger name to target -->
+  <rules>
+    <!--All logs, including from Microsoft-->
+    <logger name="NLogTest.Controllers.HomeController" minlevel="Trace" writeTo="AzureTableStorage" />
+    <logger name="NLogTest.Controllers.HomeController" minlevel="Trace" writeTo="AI" />
+  </rules>
+
+</nlog>
+
+Since Application Insight and Azure Storage table are used as targets to store data.
+Microsoft.ApplicationInsights.NLogTarget dll needs to be added in the project.
+NLog.Extensions.AzureTableStorage dll needs to be added in the project.
+
+Now Nlog.Extensions.AzureTableStorage is another project implementing the Nlog in Azure Table Storage. Its reference in the core can be used to send data in the specified Azure Table Storage.
+
+•	 Enable copy to bin folder
+•	Update startup.cs
+Add to your startup.cs
+using NLog.Extensions.Logging;
+using NLog.Web;
+
+public Startup(IHostingEnvironment env)
+{
+    env.ConfigureNLog("nlog.config");
+}
+
+public void ConfigureServices(IServiceCollection Services)
+{
+    //call this in case you need aspnet-user-authtype/aspnet-user-identity
+    services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+}
+
+// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+{
+
+    //add NLog to ASP.NET Core
+    loggerFactory.AddNLog();
+
+    //add NLog.Web
+    app.AddNLogWeb();
+
+   //note: remove the old loggerFactory, like loggerFactory.AddConsole and  loggerFactory.AddDebug
+
+•	Write logs
+Inject the ILogger in your controller:
+    public class HomeController : Controller
+    {
+        private readonly ILogger<HomeController> _logger;
+
+        public HomeController(ILogger<HomeController> logger)
+        {
+            _logger = logger;
+        }
+
+        public IActionResult Index()
+        {
+            _logger.LogInformation("Index page says hello");
+            return View();
+        }
+
+•	Output:
+
+When the above code is run the output is reflected in both the defined Azure Storage Table in the form of the row and App Insight as a trace with severity level as information.
+
