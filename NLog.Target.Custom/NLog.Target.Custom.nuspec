@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>NLog.Target.Custom</id>
+    <version>1.0.0.0</version>
+    <title>NLog.Target.Custom</title>
+    <authors>HCL</authors>
+    <owners>HCL</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>NLog for App Insight,Table Storage and Blob Storage</description>
+    <releaseNotes>Summary of changes made in this release of the package.</releaseNotes>
+    <copyright>Copyright 2017</copyright>
+    <tags>NLog Custom</tags>
+    <dependencies>
+      <dependency id="Microsoft.ApplicationInsights" version="2.4.0" />
+      <dependency id="NLog" version="4.4.12" />
+      <dependency id="Newtonsoft.Json" version="6.0.0.0" />
+      <dependency id="WindowsAzure.Storage" version="8.3.0" />
+  </dependencies>
+
+  </metadata>
+  <files>
+    <file src="bin\Debug\NLog.Target.Custom.dll" target="lib" />
+  </files>
+</package>
